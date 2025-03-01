@@ -16,6 +16,8 @@ export interface Database {
           name: string
           description: string
           user_id: string
+          default_branch: string
+          is_private: boolean
         }
         Insert: {
           id?: string
@@ -23,6 +25,8 @@ export interface Database {
           name: string
           description: string
           user_id: string
+          default_branch?: string
+          is_private?: boolean
         }
         Update: {
           id?: string
@@ -30,6 +34,8 @@ export interface Database {
           name?: string
           description?: string
           user_id?: string
+          default_branch?: string
+          is_private?: boolean
         }
       }
       documents: {
@@ -42,6 +48,8 @@ export interface Database {
           repository_id: string
           user_id: string
           type: string
+          current_version: string
+          parent_version: string | null
         }
         Insert: {
           id?: string
@@ -52,6 +60,8 @@ export interface Database {
           repository_id: string
           user_id: string
           type?: string
+          current_version?: string
+          parent_version?: string | null
         }
         Update: {
           id?: string
@@ -62,6 +72,69 @@ export interface Database {
           repository_id?: string
           user_id?: string
           type?: string
+          current_version?: string
+          parent_version?: string | null
+        }
+      }
+      versions: {
+        Row: {
+          id: string
+          created_at: string
+          document_id: string
+          content: string
+          version_hash: string
+          commit_message: string
+          user_id: string
+          parent_version: string | null
+          branch: string
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          document_id: string
+          content: string
+          version_hash: string
+          commit_message: string
+          user_id: string
+          parent_version?: string | null
+          branch?: string
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          document_id?: string
+          content?: string
+          version_hash?: string
+          commit_message?: string
+          user_id?: string
+          parent_version?: string | null
+          branch?: string
+        }
+      }
+      branches: {
+        Row: {
+          id: string
+          created_at: string
+          name: string
+          repository_id: string
+          latest_commit: string | null
+          is_default: boolean
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          name: string
+          repository_id: string
+          latest_commit?: string | null
+          is_default?: boolean
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          name?: string
+          repository_id?: string
+          latest_commit?: string | null
+          is_default?: boolean
         }
       }
       profiles: {
