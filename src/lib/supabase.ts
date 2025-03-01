@@ -1,27 +1,27 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../types/supabase'
 
+// Try to get environment variables from multiple sources
+const getEnvVar = (key: string): string => {
+  // @ts-ignore - these are injected by Vite
+  const value = (window as any)[`__${key}__`] || import.meta.env[key]
+  if (!value) {
+    console.error(`Missing ${key} environment variable`)
+    console.error('Current env:', import.meta.env)
+    throw new Error(`Missing ${key} configuration`)
+  }
+  return value
+}
+
 console.log('Environment check:', {
-  hasUrl: !!import.meta.env.VITE_SUPABASE_URL,
-  hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+  hasUrl: !!getEnvVar('VITE_SUPABASE_URL'),
+  hasKey: !!getEnvVar('VITE_SUPABASE_ANON_KEY'),
   isDevelopment: import.meta.env.DEV,
   mode: import.meta.env.MODE
 })
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-
-if (!supabaseUrl) {
-  console.error('Missing VITE_SUPABASE_URL environment variable')
-  console.error('Current env:', import.meta.env)
-  throw new Error('Missing Supabase URL configuration')
-}
-
-if (!supabaseAnonKey) {
-  console.error('Missing VITE_SUPABASE_ANON_KEY environment variable')
-  console.error('Current env:', import.meta.env)
-  throw new Error('Missing Supabase Anon Key configuration')
-}
+const supabaseUrl = getEnvVar('VITE_SUPABASE_URL')
+const supabaseAnonKey = getEnvVar('VITE_SUPABASE_ANON_KEY')
 
 let supabaseClient: ReturnType<typeof createClient<Database>>
 
