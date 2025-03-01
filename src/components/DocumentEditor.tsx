@@ -20,10 +20,36 @@ import {
   ListItem,
   Avatar,
   Badge,
+  IconButton,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  Divider,
 } from '@chakra-ui/react'
-import { FiGitBranch, FiGitCommit, FiGitMerge } from 'react-icons/fi'
-import { commitDocument, getVersionHistory, getBranches, createBranch, mergeBranches } from '../lib/version-control'
+import { 
+  FiGitBranch, 
+  FiGitCommit, 
+  FiGitMerge, 
+  FiGitPullRequest, 
+  FiMoreVertical,
+  FiCopy,
+  FiGitPullRequest as FiRebase
+} from 'react-icons/fi'
+import { 
+  commitDocument, 
+  getVersionHistory, 
+  getBranches, 
+  createBranch, 
+  mergeBranches,
+  cherryPick,
+  rebaseBranch,
+  getVersion,
+  getCommitGraph
+} from '../lib/version-control'
 import { getCurrentUser } from '../lib/supabase'
+import { DiffViewer } from './DiffViewer'
+import { BranchGraph } from './BranchGraph'
 
 interface DocumentEditorProps {
   documentId: string
@@ -45,12 +71,28 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const [branches, setBranches] = useState<any[]>([])
   const [versions, setVersions] = useState<any[]>([])
   const [selectedBranch, setSelectedBranch] = useState('')
+  const [selectedVersion, setSelectedVersion] = useState<any>(null)
+  const [showDiff, setShowDiff] = useState(false)
+  const [showGraph, setShowGraph] = useState(false)
+  const [commits, setCommits] = useState<any[]>([])
+  
   const toast = useToast()
-  const { isOpen, onOpen, onClose } = useDisclosure()
+  const { 
+    isOpen: isNewBranchOpen, 
+    onOpen: onNewBranchOpen, 
+    onClose: onNewBranchClose 
+  } = useDisclosure()
+  
+  const { 
+    isOpen: isDiffOpen, 
+    onOpen: onDiffOpen, 
+    onClose: onDiffClose 
+  } = useDisclosure()
 
   useEffect(() => {
     loadBranches()
     loadVersionHistory()
+    loadCommitGraph()
   }, [documentId])
 
   const loadBranches = async () => {
@@ -61,6 +103,11 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
   const loadVersionHistory = async () => {
     const { data } = await getVersionHistory(documentId)
     if (data) setVersions(data)
+  }
+
+  const loadCommitGraph = async () => {
+    const data = await getCommitGraph(repositoryId)
+    setCommits(data)
   }
 
   const handleCommit = async () => {
@@ -102,6 +149,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
     setCommitMessage('')
     loadVersionHistory()
+    loadCommitGraph()
   }
 
   const handleCreateBranch = async () => {
@@ -133,13 +181,43 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
     loadBranches()
     setSelectedBranch('')
-    onClose()
+    onNewBranchClose()
   }
 
-  const handleMergeBranch = async () => {
+  const handleCherryPick = async (version: any) => {
+    const user = await getCurrentUser()
+    if (!user) return
+
+    const { error } = await cherryPick(
+      version.id,
+      currentBranch,
+      user.id
+    )
+
+    if (error) {
+      toast({
+        title: 'Error cherry-picking commit',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+      })
+      return
+    }
+
+    toast({
+      title: 'Commit cherry-picked successfully',
+      status: 'success',
+      duration: 3000,
+    })
+
+    loadVersionHistory()
+    loadCommitGraph()
+  }
+
+  const handleRebase = async () => {
     if (!selectedBranch || selectedBranch === currentBranch) {
       toast({
-        title: 'Select a different branch to merge',
+        title: 'Select a different branch to rebase onto',
         status: 'error',
         duration: 3000,
       })
@@ -149,16 +227,16 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     const user = await getCurrentUser()
     if (!user) return
 
-    const { error } = await mergeBranches(
+    const { error } = await rebaseBranch(
       repositoryId,
-      selectedBranch,
       currentBranch,
+      selectedBranch,
       user.id
     )
 
     if (error) {
       toast({
-        title: 'Error merging branches',
+        title: 'Error rebasing branch',
         description: error.message,
         status: 'error',
         duration: 3000,
@@ -167,13 +245,21 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
     }
 
     toast({
-      title: 'Branches merged successfully',
+      title: 'Branch rebased successfully',
       status: 'success',
       duration: 3000,
     })
 
     loadVersionHistory()
-    setSelectedBranch('')
+    loadCommitGraph()
+  }
+
+  const handleViewDiff = async (version: any) => {
+    const { data } = await getVersion(version.id)
+    if (data) {
+      setSelectedVersion(data)
+      onDiffOpen()
+    }
   }
 
   return (
@@ -204,7 +290,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
           <Button
             leftIcon={<FiGitBranch />}
-            onClick={onOpen}
+            onClick={onNewBranchOpen}
             size="sm"
           >
             New Branch
@@ -212,13 +298,36 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
 
           <Button
             leftIcon={<FiGitMerge />}
-            onClick={handleMergeBranch}
+            onClick={() => setSelectedBranch('')}
             size="sm"
             isDisabled={branches.length < 2}
           >
             Merge
           </Button>
+
+          <Button
+            leftIcon={<FiRebase />}
+            onClick={handleRebase}
+            size="sm"
+            isDisabled={branches.length < 2}
+          >
+            Rebase
+          </Button>
+
+          <Button
+            leftIcon={<FiGitPullRequest />}
+            onClick={() => setShowGraph(!showGraph)}
+            size="sm"
+          >
+            {showGraph ? 'Hide Graph' : 'Show Graph'}
+          </Button>
         </HStack>
+
+        {showGraph && (
+          <Box border="1px" borderColor="gray.200" borderRadius="md" p={4}>
+            <BranchGraph commits={commits} />
+          </Box>
+        )}
 
         <Textarea
           value={content}
@@ -270,6 +379,25 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
                   <Badge colorScheme="blue">
                     {version.branch}
                   </Badge>
+                  <Menu>
+                    <MenuButton
+                      as={IconButton}
+                      icon={<FiMoreVertical />}
+                      variant="ghost"
+                      size="sm"
+                    />
+                    <MenuList>
+                      <MenuItem
+                        icon={<FiCopy />}
+                        onClick={() => handleCherryPick(version)}
+                      >
+                        Cherry Pick
+                      </MenuItem>
+                      <MenuItem onClick={() => handleViewDiff(version)}>
+                        View Changes
+                      </MenuItem>
+                    </MenuList>
+                  </Menu>
                 </HStack>
               </ListItem>
             ))}
@@ -277,7 +405,7 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
         </Box>
       </VStack>
 
-      <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isNewBranchOpen} onClose={onNewBranchClose}>
         <ModalOverlay />
         <ModalContent>
           <ModalHeader>Create New Branch</ModalHeader>
@@ -289,12 +417,30 @@ export const DocumentEditor: React.FC<DocumentEditorProps> = ({
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
+            <Button variant="ghost" mr={3} onClick={onNewBranchClose}>
               Cancel
             </Button>
             <Button colorScheme="blue" onClick={handleCreateBranch}>
               Create
             </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal isOpen={isDiffOpen} onClose={onDiffClose} size="xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>View Changes</ModalHeader>
+          <ModalBody>
+            {selectedVersion && (
+              <DiffViewer
+                oldContent={content}
+                newContent={selectedVersion.content}
+              />
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button onClick={onDiffClose}>Close</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
