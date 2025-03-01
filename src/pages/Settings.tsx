@@ -13,18 +13,19 @@ import {
   Card,
   CardBody,
   SimpleGrid,
+  Container,
 } from '@chakra-ui/react'
 
 const Settings = () => {
   return (
-    <Box>
-      <VStack spacing={8} align="stretch">
+    <Container maxW="container.xl" h="full" py={6}>
+      <VStack spacing={8} align="stretch" minH="full">
         <Box>
-          <Heading mb={2}>Settings</Heading>
+          <Heading size="lg" mb={2}>Settings</Heading>
           <Text color="gray.600">Manage your knowledge base preferences and configurations</Text>
         </Box>
 
-        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
+        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6} flex="1">
           <Card>
             <CardBody>
               <VStack spacing={6} align="stretch">
@@ -114,7 +115,7 @@ const Settings = () => {
           </Card>
         </SimpleGrid>
       </VStack>
-    </Box>
+    </Container>
   )
 }
 

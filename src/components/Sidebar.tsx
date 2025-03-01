@@ -56,6 +56,8 @@ const Sidebar = () => {
   return (
     <Box
       w="250px"
+      minW="250px"
+      h="full"
       bg={colorMode === 'dark' ? 'gray.700' : 'white'}
       borderRight="1px"
       borderColor={colorMode === 'dark' ? 'gray.600' : 'gray.200'}

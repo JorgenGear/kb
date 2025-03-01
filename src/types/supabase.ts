@@ -18,6 +18,8 @@ export interface Database {
           user_id: string
           default_branch: string
           is_private: boolean
+          storage_path: string
+          total_size: number
         }
         Insert: {
           id?: string
@@ -27,6 +29,8 @@ export interface Database {
           user_id: string
           default_branch?: string
           is_private?: boolean
+          storage_path?: string
+          total_size?: number
         }
         Update: {
           id?: string
@@ -36,6 +40,8 @@ export interface Database {
           user_id?: string
           default_branch?: string
           is_private?: boolean
+          storage_path?: string
+          total_size?: number
         }
       }
       documents: {
@@ -50,6 +56,10 @@ export interface Database {
           type: string
           current_version: string
           parent_version: string | null
+          mime_type: string
+          file_path: string | null
+          file_size: number | null
+          metadata: Json
         }
         Insert: {
           id?: string
@@ -62,6 +72,10 @@ export interface Database {
           type?: string
           current_version?: string
           parent_version?: string | null
+          mime_type?: string
+          file_path?: string | null
+          file_size?: number | null
+          metadata?: Json
         }
         Update: {
           id?: string
@@ -74,6 +88,10 @@ export interface Database {
           type?: string
           current_version?: string
           parent_version?: string | null
+          mime_type?: string
+          file_path?: string | null
+          file_size?: number | null
+          metadata?: Json
         }
       }
       versions: {
@@ -87,6 +105,9 @@ export interface Database {
           user_id: string
           parent_version: string | null
           branch: string
+          file_path: string | null
+          file_size: number | null
+          metadata: Json
         }
         Insert: {
           id?: string
@@ -98,6 +119,9 @@ export interface Database {
           user_id: string
           parent_version?: string | null
           branch?: string
+          file_path?: string | null
+          file_size?: number | null
+          metadata?: Json
         }
         Update: {
           id?: string
@@ -109,6 +133,9 @@ export interface Database {
           user_id?: string
           parent_version?: string | null
           branch?: string
+          file_path?: string | null
+          file_size?: number | null
+          metadata?: Json
         }
       }
       branches: {

@@ -21,6 +21,7 @@ import {
   MenuButton,
   MenuList,
   MenuItem,
+  Container,
 } from '@chakra-ui/react'
 import { FiSearch, FiPlus, FiFile, FiMoreVertical } from 'react-icons/fi'
 
@@ -93,11 +94,11 @@ const Documents = () => {
   ]
 
   return (
-    <Box>
-      <VStack spacing={8} align="stretch">
+    <Container maxW="container.xl" h="full" py={6}>
+      <VStack spacing={8} align="stretch" minH="full">
         <HStack justify="space-between">
           <Box>
-            <Heading mb={2}>Documents</Heading>
+            <Heading size="lg" mb={2}>Documents</Heading>
             <Text color="gray.600">Browse and manage your knowledge base documents</Text>
           </Box>
           <Button leftIcon={<FiPlus />} colorScheme="blue">
@@ -126,7 +127,7 @@ const Documents = () => {
           </Select>
         </HStack>
 
-        <Box overflowX="auto">
+        <Box overflowX="auto" flex="1">
           <Table variant="simple">
             <Thead>
               <Tr>
@@ -146,7 +147,7 @@ const Documents = () => {
           </Table>
         </Box>
       </VStack>
-    </Box>
+    </Container>
   )
 }
 

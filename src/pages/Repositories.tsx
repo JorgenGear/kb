@@ -15,74 +15,117 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
+  useDisclosure,
+  Spinner,
+  Center,
+  Container,
 } from '@chakra-ui/react'
-import { FiFolder, FiSearch, FiPlus } from 'react-icons/fi'
+import { FiFolder, FiSearch, FiPlus, FiLock, FiUnlock } from 'react-icons/fi'
+import { CreateRepository } from '../components/CreateRepository'
+import { useAuth } from '../contexts/AuthContext'
+import { useEffect, useState } from 'react'
+import { getRepositories } from '../lib/supabase'
+import { useNavigate } from 'react-router-dom'
 
-const RepositoryCard = ({ name, description, documentsCount, lastUpdated }: {
-  name: string;
-  description: string;
-  documentsCount: number;
-  lastUpdated: string;
-}) => (
-  <Card>
-    <CardHeader>
-      <HStack spacing={3}>
-        <Icon as={FiFolder} color="blue.500" boxSize={5} />
-        <Heading size="md">{name}</Heading>
-      </HStack>
-    </CardHeader>
-    <CardBody>
-      <VStack align="stretch" spacing={3}>
-        <Text color="gray.600">{description}</Text>
-        <HStack>
-          <Badge colorScheme="blue">{documentsCount} documents</Badge>
-          <Badge colorScheme="gray">Updated {lastUpdated}</Badge>
+interface Repository {
+  id: string
+  name: string
+  description: string
+  is_private: boolean
+  created_at: string
+  total_size: number
+}
+
+const RepositoryCard = ({ id, name, description, is_private, created_at, total_size }: Repository) => {
+  const navigate = useNavigate()
+  const timeAgo = new Date(created_at).toLocaleDateString()
+  
+  return (
+    <Card>
+      <CardHeader>
+        <HStack spacing={3}>
+          <Icon as={FiFolder} color="blue.500" boxSize={5} />
+          <Heading size="md">{name}</Heading>
+          <Icon 
+            as={is_private ? FiLock : FiUnlock} 
+            color={is_private ? "red.500" : "green.500"}
+          />
         </HStack>
-      </VStack>
-    </CardBody>
-    <CardFooter>
-      <Button variant="ghost" colorScheme="blue">View Repository</Button>
-    </CardFooter>
-  </Card>
-)
+      </CardHeader>
+      <CardBody>
+        <VStack align="stretch" spacing={3}>
+          <Text color="gray.600">{description}</Text>
+          <HStack>
+            <Badge colorScheme={is_private ? "red" : "green"}>
+              {is_private ? "Private" : "Public"}
+            </Badge>
+            <Badge colorScheme="blue">
+              {(total_size / 1024 / 1024).toFixed(2)} MB
+            </Badge>
+            <Badge colorScheme="gray">Created {timeAgo}</Badge>
+          </HStack>
+        </VStack>
+      </CardBody>
+      <CardFooter>
+        <Button 
+          variant="ghost" 
+          colorScheme="blue"
+          onClick={() => navigate(`/repositories/${id}`)}
+        >
+          View Repository
+        </Button>
+      </CardFooter>
+    </Card>
+  )
+}
 
 const Repositories = () => {
-  const repositories = [
-    {
-      name: "Project Documentation",
-      description: "Central repository for all project-related documentation, including specifications, requirements, and design documents.",
-      documentsCount: 45,
-      lastUpdated: "2 days ago"
-    },
-    {
-      name: "Research Papers",
-      description: "Collection of research papers, articles, and academic publications relevant to our work.",
-      documentsCount: 23,
-      lastUpdated: "5 days ago"
-    },
-    {
-      name: "Meeting Notes",
-      description: "Archive of meeting minutes, discussions, and decision records from team meetings.",
-      documentsCount: 67,
-      lastUpdated: "1 day ago"
-    },
-    {
-      name: "Technical Guides",
-      description: "Technical documentation, how-to guides, and best practices for the development team.",
-      documentsCount: 34,
-      lastUpdated: "1 week ago"
+  const { isOpen, onOpen, onClose } = useDisclosure()
+  const { user } = useAuth()
+  const [repositories, setRepositories] = useState<Repository[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  
+  useEffect(() => {
+    loadRepositories()
+  }, [user])
+
+  const loadRepositories = async () => {
+    if (!user) return
+    
+    try {
+      setLoading(true)
+      const { data, error } = await getRepositories(user.id)
+      
+      if (error) throw error
+      if (data) setRepositories(data)
+    } catch (error) {
+      console.error('Error loading repositories:', error)
+    } finally {
+      setLoading(false)
     }
-  ]
+  }
+
+  const filteredRepositories = repositories.filter(repo =>
+    repo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    repo.description.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   return (
-    <Box>
-      <VStack spacing={8} align="stretch">
+    <Container maxW="container.xl" h="full" py={6}>
+      <VStack spacing={8} align="stretch" minH="full">
         <HStack justify="space-between">
           <Box>
-            <Heading mb={2}>Repositories</Heading>
+            <Heading size="lg" mb={2}>Repositories</Heading>
             <Text color="gray.600">Manage and organize your knowledge base repositories</Text>
           </Box>
-          <Button leftIcon={<FiPlus />} colorScheme="blue">
+          <Button leftIcon={<FiPlus />} colorScheme="blue" onClick={onOpen}>
             New Repository
           </Button>
         </HStack>
@@ -91,16 +134,40 @@ const Repositories = () => {
           <InputLeftElement pointerEvents="none">
             <Icon as={FiSearch} color="gray.400" />
           </InputLeftElement>
-          <Input placeholder="Search repositories..." />
+          <Input 
+            placeholder="Search repositories..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </InputGroup>
 
-        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
-          {repositories.map((repo, index) => (
-            <RepositoryCard key={index} {...repo} />
-          ))}
-        </SimpleGrid>
+        {loading ? (
+          <Center py={8}>
+            <Spinner size="xl" />
+          </Center>
+        ) : (
+          <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4} flex="1">
+            {filteredRepositories.map((repo) => (
+              <RepositoryCard key={repo.id} {...repo} />
+            ))}
+          </SimpleGrid>
+        )}
       </VStack>
-    </Box>
+
+      <Modal isOpen={isOpen} onClose={onClose} size="xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Create New Repository</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody pb={6}>
+            <CreateRepository onSuccess={() => {
+              onClose()
+              loadRepositories()
+            }} />
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    </Container>
   )
 }
 

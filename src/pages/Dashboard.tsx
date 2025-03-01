@@ -13,6 +13,7 @@ import {
   Icon,
   Card,
   CardBody,
+  Container,
 } from '@chakra-ui/react'
 import { FiFile, FiFolder, FiUsers, FiActivity } from 'react-icons/fi'
 
@@ -66,10 +67,10 @@ const RecentActivity = () => (
 
 const Dashboard = () => {
   return (
-    <Box>
+    <Box w="full" py={6}>
       <VStack spacing={8} align="stretch">
         <Box>
-          <Heading mb={2}>Dashboard</Heading>
+          <Heading size="lg" mb={2}>Dashboard</Heading>
           <Text color="gray.600">Welcome back! Here's what's happening with your knowledge base.</Text>
         </Box>
 
@@ -100,7 +101,7 @@ const Dashboard = () => {
           />
         </SimpleGrid>
 
-        <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={4}>
+        <Grid templateColumns={{ base: "1fr", lg: "2fr 1fr" }} gap={4} flex="1">
           <RecentActivity />
           {/* Add more sections here like Popular Docs, etc. */}
         </Grid>
