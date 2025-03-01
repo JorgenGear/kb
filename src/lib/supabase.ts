@@ -1,21 +1,39 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '../types/supabase'
 
+console.log('Environment check:', {
+  hasUrl: !!import.meta.env.VITE_SUPABASE_URL,
+  hasKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+  isDevelopment: import.meta.env.DEV,
+  mode: import.meta.env.MODE
+})
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl) {
   console.error('Missing VITE_SUPABASE_URL environment variable')
+  console.error('Current env:', import.meta.env)
   throw new Error('Missing Supabase URL configuration')
 }
 
 if (!supabaseAnonKey) {
   console.error('Missing VITE_SUPABASE_ANON_KEY environment variable')
+  console.error('Current env:', import.meta.env)
   throw new Error('Missing Supabase Anon Key configuration')
 }
 
-console.log('Initializing Supabase client with URL:', supabaseUrl)
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+let supabaseClient: ReturnType<typeof createClient<Database>>
+
+try {
+  console.log('Initializing Supabase client with URL:', supabaseUrl)
+  supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey)
+} catch (error) {
+  console.error('Failed to initialize Supabase client:', error)
+  throw error
+}
+
+export const supabase = supabaseClient
 
 // Auth helpers
 export const getCurrentUser = async () => {
